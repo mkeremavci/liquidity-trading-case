@@ -1,0 +1,13 @@
+# © 2025 kerem.ai · All rights reserved.
+
+# Numerical operation dependencies
+numpy==2.3.2
+
+# Tabular data operation dependencies
+pandas==2.3.1
+
+# Data validation dependencies
+pydantic==2.11.7
+
+# Data visualization dependencies
+matplotlib==3.10.3

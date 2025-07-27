@@ -1,0 +1,14 @@
+# © 2025 kerem.ai · All rights reserved.
+
+# Formatter + linter dependencies
+black==25.1.0
+black[jupyter]
+isort==6.1.0
+flake8==7.3.0
+flake8-copyright==0.2.4
+
+# Pre-commit dependencies
+pre-commit==4.2.0
+
+# Notebook dependencies
+ipykernel==6.30.0

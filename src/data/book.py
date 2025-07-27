@@ -9,15 +9,12 @@ from .order import Order
 
 class OrderBook:
     """
-    A book for storing the orders for a certain asset.
-    It stores the orders for both bid and ask sides.
-    It also stores the mold packages for each timestamp.
+    A book for storing the active orders for a certain asset.
     """
 
     def __init__(self) -> None:
         self.bids: dict[int, Order] = {}
         self.asks: dict[int, Order] = {}
-        self.molds: dict[str, list[str]] = {}
 
     def step(self, order: Order) -> Order:
         """
@@ -41,10 +38,6 @@ class OrderBook:
             order = self.step_bid(order)
         else:
             order = self.step_ask(order)
-
-        # Store the mold package of the order
-        # after processing the order
-        self.store_mold(order)
 
         return order
 
@@ -105,17 +98,3 @@ class OrderBook:
             order = deleted_order.delete(order)
 
         return order
-
-    def store_mold(self, order: Order) -> None:
-        """
-        Store the order's mold package in the book.
-        If network_time of the order is not in the book,
-        create a new list for that timestamp.
-        Then, append the order's mold package to the list.
-        Mold package is a string representation of the order.
-
-        Example: "A-S-11.8-10000-7621969089429467559"
-        """
-        if order.network_time not in self.molds:
-            self.molds[order.network_time] = []
-        self.molds[order.network_time].append(str(order))

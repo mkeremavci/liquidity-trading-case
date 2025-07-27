@@ -6,6 +6,8 @@ It stores the price and the total quantity at that price for
 both bid and ask sides.
 """
 
+from dataclasses import dataclass
+
 from .order import Order
 
 
@@ -38,40 +40,118 @@ class PriceBook:
                 self.asks[order.price] = qty + order.quantity
         else:
             if order.side == "B":
+                # Get the quantity at the price
                 qty = self.bids.get(order.price, 0)
-                self.bids[order.price] = qty - order.quantity
+
+                # If the quantity is equal to the order quantity,
+                # remove the price from the bids
+                if qty == order.quantity:
+                    self.bids.pop(order.price)
+                else:
+                    self.bids[order.price] = qty - order.quantity
             else:
+                # Get the quantity at the price
                 qty = self.asks.get(order.price, 0)
-                self.asks[order.price] = qty - order.quantity
+
+                # If the quantity is equal to the order quantity,
+                # remove the price from the asks
+                if qty == order.quantity:
+                    self.asks.pop(order.price)
+                else:
+                    self.asks[order.price] = qty - order.quantity
+
+    def get_sorted_bids(self, reverse: bool = False) -> list[tuple[float, int]]:
+        """
+        Get the sorted bids and the corresponding quantities
+        in descending order if the reverse parameter is False.
+        Otherwise, it returns the sorted bids in ascending order.
+
+        Returns
+        -------
+        sorted_bids : list[tuple[float, int]]
+            The sorted bids.
+        """
+        sorted_bids = sorted(self.bids.items(), key=lambda x: x[0], reverse=not reverse)
+
+        return sorted_bids
+
+    def get_sorted_asks(self, reverse: bool = False) -> list[tuple[float, int]]:
+        """
+        Get the sorted asks and the corresponding quantities
+        in ascending order if the reverse parameter is False.
+        Otherwise, it returns the sorted asks in descending order.
+
+        Returns
+        -------
+        sorted_asks : list[tuple[float, int]]
+            The sorted asks.
+        """
+        sorted_asks = sorted(self.asks.items(), key=lambda x: x[0], reverse=reverse)
+
+        return sorted_asks
 
     @property
-    def best_prices(self) -> dict[str, float | int]:
+    def best_bid(self) -> tuple[float, int] | None:
         """
-        Best bid and ask prices and the corresponding quantities.
+        Get the best bid and the corresponding quantity.
+
+        Returns
+        -------
+        best_bid : tuple[float, int] | None
+            The best bid and the corresponding quantity.
+            If there is no bid, it returns None.
         """
-        sorted_bids = sorted(self.bids.items(), key=lambda x: x[0], reverse=True)
-        sorted_asks = sorted(self.asks.items(), key=lambda x: x[0])
+        sorted_bids = self.get_sorted_bids()
 
-        num_bid_prices = len(self.bids)
-        num_ask_prices = len(self.asks)
+        if sorted_bids:
+            return sorted_bids[0]
+        else:
+            return None
 
-        best_prices = {}
+    @property
+    def best_bid_price(self) -> float | None:
+        """
+        Get the best bid price.
+        """
+        return self.best_bid[0] if self.best_bid else None
 
-        for i in range(3):
-            # Add i'th best bid price if it exists
-            if i < num_bid_prices:
-                best_prices[f"bid{i+1}_price"] = sorted_bids[i][0]
-                best_prices[f"bid{i+1}_quantity"] = sorted_bids[i][1]
-            else:
-                best_prices[f"bid{i+1}_price"] = 0.0
-                best_prices[f"bid{i+1}_quantity"] = 0
+    @property
+    def best_ask(self) -> tuple[float, int] | None:
+        """
+        Get the best ask and the corresponding quantity.
+        """
+        sorted_asks = self.get_sorted_asks()
 
-            # Add i'th best ask price if it exists
-            if i < num_ask_prices:
-                best_prices[f"ask{i+1}_price"] = sorted_asks[i][0]
-                best_prices[f"ask{i+1}_quantity"] = sorted_asks[i][1]
-            else:
-                best_prices[f"ask{i+1}_price"] = 0.0
-                best_prices[f"ask{i+1}_quantity"] = 0
+        if sorted_asks:
+            return sorted_asks[0]
+        else:
+            return None
 
-        return best_prices
+    @property
+    def best_ask_price(self) -> float | None:
+        """
+        Get the best ask price.
+        """
+        return self.best_ask[0] if self.best_ask else None
+
+    @property
+    def mid_price(self) -> float | None:
+        """
+        Get the mid price.
+        """
+        if self.best_bid_price and self.best_ask_price:
+            return (self.best_bid_price + self.best_ask_price) / 2
+        else:
+            return None
+
+
+@dataclass
+class PriceTable:
+    """
+    A table for storing the prices for a certain asset
+    at a certain timestamp.
+    """
+
+    mid_price: float
+    last_execution_price: float
+    best_bid_price: float

@@ -40,7 +40,7 @@ class OrderParser:
         with open(path, "r") as file:
             while line := file.readline():
                 yield cls.parse_order(line)
-    
+
     @classmethod
     def parse_order(cls, order: str) -> Order | None:
         """

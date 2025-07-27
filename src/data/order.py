@@ -4,17 +4,18 @@
 "Order" class for a single order in a market.
 """
 
+import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, Field
 
 
-def parse_timestamp(timestamp: str) -> str:
+def parse_timestamp(timestamp: str) -> datetime:
     """
-    Parse the timestamp from integer timestamp to ISO 8601 format.
+    Parse the timestamp from integer timestamp to datetime object.
     It converts timestamp string to floating point number and
-    then to ISO 8601 format.
+    then to datetime object.
 
     Parameters
     ----------
@@ -23,10 +24,10 @@ def parse_timestamp(timestamp: str) -> str:
 
     Returns
     -------
-    timestamp : str
-        The parsed timestamp in ISO 8601 format.
+    timestamp : datetime
+        The parsed timestamp.
     """
-    return datetime.fromtimestamp(float(timestamp) / 1e9).isoformat()
+    return datetime.fromtimestamp(float(timestamp) / 1e9)
 
 
 class Order(BaseModel):
@@ -35,9 +36,9 @@ class Order(BaseModel):
 
     Parameters
     ----------
-    network_time : str
+    network_time : datetime
         The timestamp of the order in network time.
-    bist_time : str
+    bist_time : datetime
         The timestamp of the order in BIST time.
     msg_type : Literal["A", "D", "E"]
         The type of the message, which can be "A", "D", or "E".
@@ -53,20 +54,34 @@ class Order(BaseModel):
         The unique identifier of the order.
     """
 
-    network_time: Annotated[str, BeforeValidator(parse_timestamp)]
-    bist_time: Annotated[str, BeforeValidator(parse_timestamp)]
+    network_time: Annotated[datetime, BeforeValidator(parse_timestamp)]
+    bist_time: Annotated[datetime, BeforeValidator(parse_timestamp)]
     msg_type: Literal["A", "D", "E"]
     asset_name: str
     side: Literal["B", "S"]
     price: float
     quantity: int
-    order_id: int
+    order_id: int = Field(default_factory=lambda: uuid.uuid1().int >> 64)
+
+    def get_network_time(self) -> str:
+        """
+        Get the network time of the order in the format of "YYYY-MM-DD HH:MM:SS.ffffff".
+        """
+        return self.network_time.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+    def get_bist_time(self) -> str:
+        """
+        Get the BIST time of the order in the format of "YYYY-MM-DD HH:MM:SS.ffffff".
+        """
+        return self.bist_time.strftime("%Y-%m-%d %H:%M:%S.%f")
 
     def __str__(self) -> str:
         """
         String representation of the order.
         """
-        return f"{self.msg_type}-{self.side}-{self.price}-{self.quantity}-{self.order_id}"
+        return (
+            f"{self.msg_type}-{self.side}-{self.price}-{self.quantity}-{self.order_id}"
+        )
 
     def __lt__(self, other: "Order") -> bool:
         """

@@ -1,10 +1,10 @@
 # © 2025 kerem.ai · All rights reserved.
 
-__version__ = "0.1.0"
-
-from . import data
+from . import backtest, data
+from .strategies import STRATEGIES
 
 __all__ = [
-    "__version__",
+    "STRATEGIES",
+    "backtest",
     "data",
 ]

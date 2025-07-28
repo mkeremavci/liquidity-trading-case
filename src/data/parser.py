@@ -1,18 +1,11 @@
 # © 2025 kerem.ai · All rights reserved.
 
-"""
-A parser for the order data.
-It parses the order data from the given path, and yields the orders one by one.
-If the row is not valid, None is yielded.
-"""
-
 from pathlib import Path
-from typing import Generator
 
 from .order import Order
 
 
-class OrderParser:
+class Parser:
     """
     A parser for the given order data.
     An order includes the following information:
@@ -29,17 +22,61 @@ class OrderParser:
     It behaves like a generator, and reads the data row-by-row.
     Each valid row is converted to an Order object.
     Order objects are yielded one by one.
+
+    Parameters
+    ----------
+    filepath : str | Path
+        The path to the order data file.
     """
 
-    @classmethod
-    def parse(cls, path: str | Path) -> Generator[Order | None, None, None]:
+    def __init__(self, filepath: str | Path) -> None:
+        # Validate and store the filepath for the order data
+        self.filepath = Path(filepath)
+        if not self.filepath.exists():
+            raise FileNotFoundError(f"File {filepath} does not exist")
+
+        self._file = open(self.filepath, "r")
+        self._is_open = True
+
+    @property
+    def is_open(self) -> bool:
         """
-        Parse the order data from the given path, and yield the orders one by one.
-        If the row is not valid, None is yielded.
+        Check if the file is open.
         """
-        with open(path, "r") as file:
-            while line := file.readline():
-                yield cls.parse_order(line)
+        return self._is_open
+
+    def close(self) -> None:
+        """
+        Close the file object.
+        """
+        if self._is_open:
+            self._file.close()
+            self._is_open = False
+
+    def get_next_order(self) -> Order | None:
+        """
+        Get the next order from the file.
+
+        Returns
+        -------
+        order : Order | None
+            The next order from the file.
+            If the file is not open or line is not valid, None is returned.
+        """
+        # If the file is not open, return None
+        if not self._is_open:
+            return None
+
+        # Read the next line from the file
+        line = self._file.readline()
+
+        # If the line is empty, close the file and return None
+        if not line:
+            self.close()
+            return None
+
+        # Parse the order from the line
+        return self.parse_order(line)
 
     @classmethod
     def parse_order(cls, order: str) -> Order | None:

@@ -1,9 +1,5 @@
 # © 2025 kerem.ai · All rights reserved.
 
-"""
-"Order" class for a single order in a market.
-"""
-
 import uuid
 from datetime import datetime
 from typing import Annotated, Literal
@@ -11,7 +7,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, BeforeValidator, Field
 
 
-def parse_timestamp(timestamp: str) -> datetime:
+def parse_timestamp(timestamp: str | datetime) -> datetime:
     """
     Parse the timestamp from integer timestamp to datetime object.
     It converts timestamp string to floating point number and
@@ -27,6 +23,8 @@ def parse_timestamp(timestamp: str) -> datetime:
     timestamp : datetime
         The parsed timestamp.
     """
+    if isinstance(timestamp, datetime):
+        return timestamp
     return datetime.fromtimestamp(float(timestamp) / 1e9)
 
 
@@ -40,8 +38,12 @@ class Order(BaseModel):
         The timestamp of the order in network time.
     bist_time : datetime
         The timestamp of the order in BIST time.
-    msg_type : Literal["A", "D", "E"]
-        The type of the message, which can be "A", "D", or "E".
+    msg_type : Literal["A", "D", "E", "C"]
+        The type of the message, which can be "A", "D", "E", or "C".
+        "A" stands for an order is added.
+        "D" stands for an order is deleted.
+        "E" stands for an order is executed.
+        "C" stands for a cancel request.
     asset_name : str
         The name of the asset, which is the ticker symbol.
     side : Literal["B", "S"]
@@ -56,24 +58,12 @@ class Order(BaseModel):
 
     network_time: Annotated[datetime, BeforeValidator(parse_timestamp)]
     bist_time: Annotated[datetime, BeforeValidator(parse_timestamp)]
-    msg_type: Literal["A", "D", "E"]
+    msg_type: Literal["A", "D", "E", "C"]
     asset_name: str
     side: Literal["B", "S"]
     price: float
     quantity: int
     order_id: int = Field(default_factory=lambda: uuid.uuid1().int >> 64)
-
-    def get_network_time(self) -> str:
-        """
-        Get the network time of the order in the format of "YYYY-MM-DD HH:MM:SS.ffffff".
-        """
-        return self.network_time.strftime("%Y-%m-%d %H:%M:%S.%f")
-
-    def get_bist_time(self) -> str:
-        """
-        Get the BIST time of the order in the format of "YYYY-MM-DD HH:MM:SS.ffffff".
-        """
-        return self.bist_time.strftime("%Y-%m-%d %H:%M:%S.%f")
 
     def __str__(self) -> str:
         """
@@ -82,68 +72,3 @@ class Order(BaseModel):
         return (
             f"{self.msg_type}-{self.side}-{self.price}-{self.quantity}-{self.order_id}"
         )
-
-    def __lt__(self, other: "Order") -> bool:
-        """
-        Compare the orders by price and bist_time, respectively.
-        If the prices are equal, it compares the bist_time.
-        Otherwise, it compares the price.
-        """
-        if self.price == other.price:
-            return self.bist_time < other.bist_time
-        return self.price < other.price
-
-    def __gt__(self, other: "Order") -> bool:
-        """
-        Compare the orders by price and bist_time, respectively.
-        If the prices are equal, it compares the bist_time.
-        Otherwise, it compares the price.
-        """
-        if self.price == other.price:
-            return self.bist_time > other.bist_time
-        return self.price > other.price
-
-    def execute(self, order: "Order") -> tuple["Order", bool]:
-        """
-        Take "execute" action the order, and return the message order
-        with the executed order's price.
-        If the order is fully completed, it returns True for the second return value.
-        Otherwise (i.e., there is remaining quantity), it returns False.
-
-        Parameters
-        ----------
-        order : Order
-            The order containing the "execute" message.
-
-        Returns
-        -------
-        order : Order
-            The message order with the executed order's price.
-        is_completed : bool
-            Whether the order is completed.
-            In other words, after executing the order, no quantity is left.
-        """
-        order.price = self.price
-        self.quantity -= order.quantity
-
-        return order, self.quantity == 0
-
-    def delete(self, order: "Order") -> "Order":
-        """
-        Take "delete" action the order, and return the message order
-        with the deleted order's price and quantity.
-
-        Parameters
-        ----------
-        order : Order
-            The order containing the "delete" message.
-
-        Returns
-        -------
-        order : Order
-            The message order with the deleted order's price and quantity.
-        """
-        order.price = self.price
-        order.quantity = self.quantity
-
-        return order

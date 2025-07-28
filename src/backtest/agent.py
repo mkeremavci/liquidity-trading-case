@@ -24,11 +24,6 @@ class Balance:
     held_stock: int = 0
 
 
-@dataclass
-class History:
-    pass
-
-
 class Agent(ABC):
     """
     An agent that can trade on a market.

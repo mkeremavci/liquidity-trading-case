@@ -5,7 +5,7 @@ from typing import Callable
 from src.backtest import Agent
 
 
-class Registry(dict[str, Agent]):
+class Registry(dict[str, type[Agent]]):
     """
     A wrapper on the built-in dictionary to register and manage agents.
     """
@@ -15,7 +15,7 @@ class Registry(dict[str, Agent]):
 
     @classmethod
     def _register(
-        cls, module_dict: "Registry", module_name: str, module: Agent
+        cls, module_dict: "Registry", module_name: str, module: type[Agent]
     ) -> None:
         """
         Register the agent to the given registry with the given name.
@@ -35,7 +35,7 @@ class Registry(dict[str, Agent]):
     def register(
         self,
         module_name: str,
-        module: Agent | None = None,
+        module: type[Agent] | None = None,
     ) -> Callable | None:
         """
         Register the agent to the given registry with the given name.
@@ -45,7 +45,7 @@ class Registry(dict[str, Agent]):
         ----------
         module_name : str
             The name of the agent to register.
-        module : Agent | None, optional
+        module : type[Agent] | None, optional
             The agent to register.
 
         Returns
@@ -60,7 +60,7 @@ class Registry(dict[str, Agent]):
             return
 
         # Register when used as a decorator
-        def register_func(fn: Agent) -> Agent:
+        def register_func(fn: type[Agent]) -> type[Agent]:
             """
             Register the agent with the given name.
 
@@ -74,7 +74,7 @@ class Registry(dict[str, Agent]):
 
         return register_func
 
-    def __getitem__(self, item: str) -> Agent:
+    def __getitem__(self, item: str) -> type[Agent]:
         """
         Get the agent with the given name.
         """
@@ -85,4 +85,5 @@ class Registry(dict[str, Agent]):
 STRATEGIES = Registry()
 
 # Import the strategies and register them
+from .dummy import *
 from .ewma import *

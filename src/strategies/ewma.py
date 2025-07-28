@@ -10,10 +10,10 @@ from src.data import Order
 from . import STRATEGIES
 
 
-@STRATEGIES.register("most-basic-ewma")
-class MostBasicEWMAAgent(Agent):
+@STRATEGIES.register("basic-ewma")
+class BasicEWMAAgent(Agent):
     """
-    An agent that uses the most basic EWMA strategy.
+    An agent that uses a basic EWMA strategy.
     It cannot use cancel orders.
     It determines whether to place a bid or an ask based on the EWMA
     of the mid-price.
@@ -80,7 +80,10 @@ class MostBasicEWMAAgent(Agent):
             return []
 
         # If the last order was placed less than the wait time ago, do nothing
-        if self.last_order_time and self.last_order_time + self.wait_time > book.timestamp:
+        if (
+            self.last_order_time
+            and self.last_order_time + self.wait_time > book.timestamp
+        ):
             return []
         self.last_order_time = book.timestamp
 
